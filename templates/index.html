@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <title>Cats Everywhere!</title> 
+</head>  
+
+
+<body>
+  <div align="center">
+  <div id="banner">
+    <h1>Stream the most recent tweets with the keyword: </h1>
+  </div>
+
+
+<form action="/compute" method="post">
+  <select name="keyword">
+  <option value="apple">Apple</option>
+  <option value="Cheese">Cheese</option>
+  <option value="Ghost">Ghost</option>
+  <option value="Politics">Politics</option>
+  <option value="Pickle">Pickle</option>
+  <option value="Anxious">Anxious</option>
+  <option value="Cars">Cars</option>
+  <option value="saab">Saab</option>
+  <option value="mercedes">Mercedes</option>
+  <option value="audi">Audi</option>
+  <br>
+  <input type="submit" value="Find"></input>
+</select>
+</br>
+<br>
+</form>
+
+<form action="/compute" method="post">
+OR give us your own keyword: <br>
+ <input type="text" name="keyword"></input>
+</form>
+
+<br>
+
+<div align="center">
+Please wait a while for us to get the tweets that you want...
+</div>
+
+
+</div>
+
+</body>
+</html>
