@@ -1,0 +1,4 @@
+This application lets the user either put in a keyword to search for or pick from a drop down menu. Then the user must wait for a couple of seconds while the data is being gathered. The user can also specify how many tweets they want to gather. 
+
+The twitter APIs then collects the "n" most recent tweets with that keyword
+and uses the google API with the heatmap.js API to load the tweets onto a heatmap 

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
   <title>Tweet Heat</title>
   <style>
@@ -976,8 +977,7 @@ HeatmapOverlay.prototype.addData = function(pointOrArray) {
   </script>
 </head>
 <body>
-  <h1>Heatmap</h1>
-
+  <div align="center"> <h3> Heatmap with your keyword: {{keyword}}</h3></div>
 
   <div id="map-canvas" align="center"></div>
 

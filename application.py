@@ -40,8 +40,11 @@ def get_db():
 
 # This is the listener, resposible for receiving data
 class StdOutListener(tweepy.StreamListener,):
-    def __init__(self, keyword):
-        self.num_tweets = 0
+    def __init__(self, keyword,number_tweets):
+        self.num_tweets= 0
+        print "HERE SHITHEADS"
+        self.max_tweets= int(number_tweets)
+        print self.max_tweets
         self.key = keyword
 
     def on_data(self, data):
@@ -61,7 +64,10 @@ class StdOutListener(tweepy.StreamListener,):
             
                 location = decoded['user']['location']
                 self.num_tweets = self.num_tweets + 1
-                if self.num_tweets < 20:
+                print "compareiosn:"
+                print self.num_tweets
+                print self.max_tweets
+                if self.num_tweets < self.max_tweets:
                     
                     print "geolocation: "
                     print geolocation
@@ -90,7 +96,7 @@ def stream_tweet(keyword):
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     print "start streaming"
-    l = StdOutListener(keyword)
+    l = StdOutListener(keyword, number_tweets)
     stream = tweepy.Stream(auth, l)
     stream.filter(track=keyword)
 
@@ -99,9 +105,9 @@ def stream_tweet(keyword):
 @app.route('/')
 def hello_world():
     
-	author = "Me"
-	name = "You"
-	return render_template('index.html', author=author, name=name)
+    author = "Me"
+    name = "You"
+    return render_template('index.html', author=author, name=name)
 
 
 @app.route('/compute', methods = ['POST'])
@@ -109,7 +115,9 @@ def signup():
     print " _________________________________________COMPUTE____"
     keyword = request.form['keyword']
     print("Finding keyword " + keyword + " ")
-
+    number_tweets = request.form['number_tweets']
+    print number_tweets
+    print keyword
     #__________Using keyword to find a list of streaming tweets w that keyword_____
     #initialization 
     
@@ -126,16 +134,16 @@ def signup():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     print "start streaming"
-    l = StdOutListener(keyword)
+    l = StdOutListener(keyword,number_tweets)
 
     stream = tweepy.Stream(auth, l)
     stream.filter(track=keyword)
 
     print "Showing all new tweets for #programming:"
-    return redirect('/showmap/'+keyword)
+    return redirect('/showmap/'+keyword+"/"+number_tweets)
 
-@app.route('/showmap/<keyword>')
-def showmap(keyword):
+@app.route('/showmap/<keyword>/<number_tweets>')
+def showmap(keyword,number_tweets):
     print " _________________________________________showmap____"
     
     print fake_db
@@ -161,13 +169,13 @@ def hi(keyword):
   
 
 if __name__ == '__main__':
-	app.run()
-	'''
-	auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-	auth.set_access_token(access_token, access_token_secret)
-	print "Showing all new tweets for #programming:"
-	stream = tweepy.Stream(auth, l)
-	stream.filter(locations=[-122.75,36.8,-121.75,37.8])
-	'''
+    app.run()
+    '''
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_token_secret)
+    print "Showing all new tweets for #programming:"
+    stream = tweepy.Stream(auth, l)
+    stream.filter(locations=[-122.75,36.8,-121.75,37.8])
+    '''
 
-	
+    
