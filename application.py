@@ -4,6 +4,9 @@ import json
 import sqlite3
 import threading
 import time 
+import mysql.connector
+import threading 
+
 #from flaskext.mysql import MySQL
 
 
@@ -23,6 +26,14 @@ consumer_secret = 'HKThlcphUISUkfr7pszy8adme9L9GvkZgON6MsjOQl2FSuWasq'
 access_token = '431061070-SxikicdfSCuVg763C8ON7QgbGrTxsIT08lhCM1EJ'
 access_token_secret = 'I28gbPCpNbHeUs0LEc7x2pX5hTjoTTFe1nqhxTxwYCTZC'
 
+config = {
+  'user': 'jessicafan',
+  'password': 'jessicafan',
+  'host': 'cloud.c1xwtu16srrr.us-east-1.rds.amazonaws.com',
+  'database': 'cloud',
+  'raise_on_warnings': True,
+}
+
 #------------DATABASE STUFF----------------
 
 def connect_db():
@@ -39,7 +50,7 @@ def get_db():
 #--------END DATABASE STUFF----------------
 
 # This is the listener, resposible for receiving data
-class StdOutListener(tweepy.StreamListener,):
+class StdOutListener1(tweepy.StreamListener,):
     def __init__(self, keyword,number_tweets):
         self.num_tweets= 0
         print "HERE SHITHEADS"
@@ -88,6 +99,44 @@ class StdOutListener(tweepy.StreamListener,):
     def on_error(self, status):
         print status
 
+class StdOutListener(tweepy.StreamListener,):
+
+    def __init__(self):
+        self.max=100000
+
+    def on_data(self, data):
+        # Twitter returns data in JSON format - we need to decode it first
+        decoded = json.loads(data)
+        #print decoded
+        if 'user' in decoded:
+            # Also, we convert UTF-8 to ASCII ignoring all bad characters sent by users
+            #print '@%s: %s' % (decoded['user']['screen_name'], decoded['text'].encode('ascii', 'ignore'))
+            user = decoded['user']['screen_name']
+            text = decoded['text'].encode('ascii', 'ignore')
+            if decoded["geo"] == None:
+                pass
+            else:
+                geolocation = decoded['geo']['coordinates']
+                tweet_id = decoded['id_str'].encode('ascii')
+                location = decoded['user']['location']
+                lat= geolocation[0]
+                lng = geolocation[1]
+                cnx = mysql.connector.connect(**config)
+                cursor = cnx.cursor()
+                print location
+                test = ("INSERT INTO tweet "
+                    "(keyword, lat, lng, tweet, tweet_id) "
+                    "VALUES (%s, %s, %s, %s, %s)")
+                
+                data_one = (user,lat,lng,text,tweet_id)
+                cursor.execute(test, data_one)
+                cnx.commit()
+                cursor.close()
+              
+        return True
+    def on_error(self, status):
+        print status
+
 def stream_tweet(keyword):
     print "debug0"
     #exam = cursor.execute("select * from loc;")
@@ -96,9 +145,9 @@ def stream_tweet(keyword):
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
     print "start streaming"
-    l = StdOutListener(keyword, number_tweets)
+    l = StdOutListener()
     stream = tweepy.Stream(auth, l)
-    stream.filter(track=keyword)
+    stream.filter()
 
 
 
@@ -115,12 +164,13 @@ def signup():
     print " _________________________________________COMPUTE____"
     keyword = request.form['keyword']
     print("Finding keyword " + keyword + " ")
-    number_tweets = request.form['number_tweets']
-    print number_tweets
+
     print keyword
     #__________Using keyword to find a list of streaming tweets w that keyword_____
     #initialization 
     
+
+    '''
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_token, access_token_secret)
 
@@ -138,15 +188,29 @@ def signup():
 
     stream = tweepy.Stream(auth, l)
     stream.filter(track=keyword)
-
+    '''
     print "Showing all new tweets for #programming:"
-    return redirect('/showmap/'+keyword+"/"+number_tweets)
+    return redirect('/showmap/'+keyword)
 
-@app.route('/showmap/<keyword>/<number_tweets>')
-def showmap(keyword,number_tweets):
+@app.route('/showmap/<keyword>')
+def showmap(keyword):
     print " _________________________________________showmap____"
-    
-    print fake_db
+    #SELECT * FROM POINTS
+    #DB = JSON
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    query = "SELECT lat, lng, tweet FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
+
+    print "cursor is excuging"
+    cursor.execute(query)
+    print "done:"
+
+    db = []
+    for (lat, lng, tweet) in cursor:
+        db.append([tweet,lat, lng])
+    print len(db)
+    cursor.close()
+    cnx.close()
     '''
     pass_db = []
     for x in fake_db:
@@ -157,18 +221,36 @@ def showmap(keyword,number_tweets):
 
     '''
     print "fake db"
-    print fake_db
-    print keyword
-    return render_template('map.html',keyword=keyword, db=fake_db)
+
+    return render_template('map.html',keyword=keyword, db=db)
 
 @app.route('/')
 def hi(keyword):
     author = "Me"
     name = "You"
     return render_template('index.html', author=author, name=name)
-  
+
+def start_stream():
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_token_secret)
+    print "dubug -1"
+    l = StdOutListener()
+    print "debug -2"
+    stream = tweepy.Stream(auth, l)
+    print "debug -3"
+    stream.filter(locations=[-179.9,-89.9,179.9,89.9])
+
+
+def runThread():
+    st = threading.Thread( target = start_stream )
+    st.start()
 
 if __name__ == '__main__':
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    print cnx
+    #app.run(host='0.0.0.0')
+    app.before_first_request(runThread)
     app.run()
     '''
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)

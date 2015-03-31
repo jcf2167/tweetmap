@@ -1011,6 +1011,9 @@ HeatmapOverlay.prototype.addData = function(pointOrArray) {
             valueField: 'count'
           }
           );
+        setTimeout('window.location.href=window.location.href;', 3000);
+        //set interval
+        //on change 
         var testData = {
 
           max: 500,
@@ -1021,7 +1024,7 @@ HeatmapOverlay.prototype.addData = function(pointOrArray) {
           {% for entry in db %}
 
           heatmap.addData( 
-              {lat:{{entry[1]}},lng:{{entry[2]}},count:1}
+            {lat:{{entry[1]}},lng:{{entry[2]}},count:1}
               );
           {% endfor %}
         
