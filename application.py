@@ -21,10 +21,10 @@ SQLITE_THREADSAFE = 2
 
 fake_db=[]
 # Authentication details. To  obtain these visit dev.twitter.com
-consumer_key = 'rWBeqBjr3v9KbHeKwFr30FcT4'
-consumer_secret = 'HKThlcphUISUkfr7pszy8adme9L9GvkZgON6MsjOQl2FSuWasq'
-access_token = '431061070-SxikicdfSCuVg763C8ON7QgbGrTxsIT08lhCM1EJ'
-access_token_secret = 'I28gbPCpNbHeUs0LEc7x2pX5hTjoTTFe1nqhxTxwYCTZC'
+consumer_key = ''
+consumer_secret = ''
+access_token = ''
+access_token_secret = ''
 
 config = {
   'user': 'jessicafan',
