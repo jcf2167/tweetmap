@@ -6,10 +6,9 @@ import threading
 import time 
 import mysql.connector
 import threading 
+import boto.sqs
 
 #from flaskext.mysql import MySQL
-
-
 
 print "working"
 
@@ -21,10 +20,13 @@ SQLITE_THREADSAFE = 2
 
 fake_db=[]
 # Authentication details. To  obtain these visit dev.twitter.com
-consumer_key = ''
-consumer_secret = ''
-access_token = ''
-access_token_secret = ''
+with open("config") as f:
+    content = f.readlines()
+print content
+consumer_key = content[0].rstrip()
+consumer_secret = content[1].rstrip()
+access_token = content[2].rstrip()
+access_token_secret = content[3].rstrip()
 
 config = {
   'user': 'jessicafan',
@@ -48,56 +50,6 @@ def get_db():
     return g.sqlite_db
 
 #--------END DATABASE STUFF----------------
-
-# This is the listener, resposible for receiving data
-class StdOutListener1(tweepy.StreamListener,):
-    def __init__(self, keyword,number_tweets):
-        self.num_tweets= 0
-        print "HERE SHITHEADS"
-        self.max_tweets= int(number_tweets)
-        print self.max_tweets
-        self.key = keyword
-
-    def on_data(self, data):
-    
-        # Twitter returns data in JSON format - we need to decode it first
-        decoded = json.loads(data)
-        #print decoded
-        if 'user' in decoded:
-            # Also, we convert UTF-8 to ASCII ignoring all bad characters sent by users
-            #print '@%s: %s' % (decoded['user']['screen_name'], decoded['text'].encode('ascii', 'ignore'))
-            user = decoded['user']['screen_name']
-            text = decoded['text'].encode('ascii', 'ignore')
-            if decoded["geo"] == None:
-                pass
-            else:
-                geolocation = decoded['geo']['coordinates']
-            
-                location = decoded['user']['location']
-                self.num_tweets = self.num_tweets + 1
-                print "compareiosn:"
-                print self.num_tweets
-                print self.max_tweets
-                if self.num_tweets < self.max_tweets:
-                    
-                    print "geolocation: "
-                    print geolocation
-                    print "location"
-                    print location
-                    #cursor.execute('insert into loc (user, lat, long) values (?, ?, ?);',
-                    #[keyword,geolocation[0],geolocation[1]])
-                    info = [self.key,geolocation[0],geolocation[1]]
-                    fake_db.append(info)
-                    print fake_db
-                    print info
-                    print self.num_tweets
-                    print '_________________________________________'
-                    return True
-                else:
-                    return False
-        return True
-    def on_error(self, status):
-        print status
 
 class StdOutListener(tweepy.StreamListener,):
 
@@ -238,6 +190,7 @@ def start_stream():
     print "debug -2"
     stream = tweepy.Stream(auth, l)
     print "debug -3"
+    #stream.filter(track="a")
     stream.filter(locations=[-179.9,-89.9,179.9,89.9])
 
 
