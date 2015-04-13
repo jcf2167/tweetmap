@@ -6,6 +6,7 @@ import threading
 import time 
 import mysql.connector
 import threading 
+
 import boto.sqs
 from boto.sqs.message import Message
 
@@ -93,6 +94,26 @@ class StdOutListener(tweepy.StreamListener,):
                 test = ("INSERT INTO tweet "
                     "(keyword, lat, lng, tweet, tweet_id) "
                     "VALUES (%s, %s, %s, %s, %s)")
+
+                print q
+                m = Message()
+                m.message_attributes = {
+                    "user":user,
+                    "geolocation":geolocation,
+                    "location":location,
+                    "lat":lat,
+                    "lng":lng,
+                    "tweet":tweet,
+                    "tweet_id":tweet_id,
+                    "datetime": time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
+                }
+
+                q.write(m)
+                rs = q.get_messages()
+                m = rs[0]
+                print m.get_body()
+                q.delete_message(m)
+                print q
                 
                 data_one = (user,lat,lng,text,tweet_id)
                 cursor.execute(test, data_one)
@@ -195,11 +216,6 @@ if __name__ == '__main__':
     app.before_first_request(runThread)
     connect_sqs()
     app.run()
-<<<<<<< HEAD
-=======
-    
 
->>>>>>> sentiment
-    
 
     
