@@ -7,6 +7,7 @@ import time
 import mysql.connector
 import threading 
 import boto.sqs
+from boto.sqs.message import Message
 
 #from flaskext.mysql import MySQL
 
@@ -22,7 +23,6 @@ fake_db=[]
 # Authentication details. To  obtain these visit dev.twitter.com
 with open("config") as f:
     content = f.readlines()
-print content
 consumer_key = content[0].rstrip()
 consumer_secret = content[1].rstrip()
 access_token = content[2].rstrip()
@@ -49,7 +49,21 @@ def get_db():
         g.sqlite_db = connect_db()
     return g.sqlite_db
 
-#--------END DATABASE STUFF----------------
+def connect_sqs():
+    conn = boto.sqs.connect_to_region("us-west-2",aws_access_key_id=content[4].rstrip(),aws_secret_access_key=content[5].rstrip())
+    q = conn.create_queue('myqueue')
+    print q
+    m = Message()
+    m.set_body('This is my first message.')
+    print "these are all queues: "
+    print conn.get_all_queues()
+    q.write(m)
+    rs = q.get_messages()
+    m = rs[0]
+    print m.get_body()
+    q.delete_message(m)
+    print q
+
 
 class StdOutListener(tweepy.StreamListener,):
 
@@ -120,35 +134,11 @@ def signup():
     print keyword
     #__________Using keyword to find a list of streaming tweets w that keyword_____
     #initialization 
-    
-
-    '''
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-
-    #st = threading.Thread(target=stream_tweet, args=[keyword])
-    #print st
-    #st.start()
-    print "debug0"
-    #exam = cursor.execute("select * from loc;")
-    #entires = exam.fetchall()
-    print "debug1   "
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    print "start streaming"
-    l = StdOutListener(keyword,number_tweets)
-
-    stream = tweepy.Stream(auth, l)
-    stream.filter(track=keyword)
-    '''
     print "Showing all new tweets for #programming:"
     return redirect('/showmap/'+keyword)
 
 @app.route('/showmap/<keyword>')
 def showmap(keyword):
-    print " _________________________________________showmap____"
-    #SELECT * FROM POINTS
-    #DB = JSON
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     query = "SELECT lat, lng, tweet FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
@@ -170,7 +160,6 @@ def showmap(keyword):
         if x[0]==keyword:
             pass_db.append[x]
         fake_db.remove(x)
-
     '''
     print "fake db"
 
@@ -204,13 +193,8 @@ if __name__ == '__main__':
     print cnx
     #app.run(host='0.0.0.0')
     app.before_first_request(runThread)
+    connect_sqs()
     app.run()
-    '''
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    print "Showing all new tweets for #programming:"
-    stream = tweepy.Stream(auth, l)
-    stream.filter(locations=[-122.75,36.8,-121.75,37.8])
-    '''
+    
 
     
