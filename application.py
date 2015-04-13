@@ -195,6 +195,11 @@ if __name__ == '__main__':
     app.before_first_request(runThread)
     connect_sqs()
     app.run()
+<<<<<<< HEAD
+=======
+    
+
+>>>>>>> sentiment
     
 
     

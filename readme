@@ -2,5 +2,3 @@ This application lets the user either put in a keyword to search for or pick fro
 
 The twitter APIs then collects the "n" most recent tweets with that keyword
 and uses the google API with the heatmap.js API to load the tweets onto a heatmap 
-
-using aws SNS and SQS to udpate GUI
