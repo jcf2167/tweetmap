@@ -20,6 +20,7 @@ conn = sqlite3.connect("coord.db")
 cursor = conn.cursor()
 SQLITE_THREADSAFE = 2
 
+
 fake_db=[]
 # Authentication details. To  obtain these visit dev.twitter.com
 with open("config") as f:
@@ -28,6 +29,9 @@ consumer_key = content[0].rstrip()
 consumer_secret = content[1].rstrip()
 access_token = content[2].rstrip()
 access_token_secret = content[3].rstrip()
+
+conn = boto.sqs.connect_to_region("us-west-2",aws_access_key_id=content[4].rstrip(),aws_secret_access_key=content[5].rstrip())
+queue_sns = conn.create_queue('cloudcomp')
 
 config = {
   'user': 'jessicafan',
@@ -49,10 +53,6 @@ def get_db():
     if not hasattr(g, 'sqlite_db'):
         g.sqlite_db = connect_db()
     return g.sqlite_db
-
-def connect_sqs():
-    conn = boto.sqs.connect_to_region("us-west-2",aws_access_key_id=content[4].rstrip(),aws_secret_access_key=content[5].rstrip())
-    q = conn.create_queue('myqueue')
 
 class StdOutListener(tweepy.StreamListener,):
 
@@ -83,7 +83,6 @@ class StdOutListener(tweepy.StreamListener,):
                     "(keyword, lat, lng, tweet, tweet_id) "
                     "VALUES (%s, %s, %s, %s, %s)")
 
-                print q
                 print conn.get_all_queues()
                 m = Message()
                 m.message_attributes = {
@@ -92,17 +91,15 @@ class StdOutListener(tweepy.StreamListener,):
                     "location":location,
                     "lat":lat,
                     "lng":lng,
-                    "tweet":tweet,
+                    #"tweet":tweet,
                     "tweet_id":tweet_id,
                     "datetime": time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
                 }
 
-                q.write(m)
-                rs = q.get_messages()
+                queue_sns.write(m)
+                rs = queue_sns.get_messages()
                 m = rs[0]
                 print m.get_body()
-                q.delete_message(m)
-                print q
 
                 data_one = (user,lat,lng,text,tweet_id)
                 cursor.execute(test, data_one)
@@ -128,8 +125,7 @@ def stream_tweet(keyword):
 
 
 @app.route('/')
-def hello_world():
-    
+def hello_world():  
     author = "Me"
     name = "You"
     return render_template('index.html', author=author, name=name)
@@ -203,7 +199,6 @@ if __name__ == '__main__':
     print cnx
     #app.run(host='0.0.0.0')
     app.before_first_request(runThread)
-    connect_sqs()
     app.run()
 
 
