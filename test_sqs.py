@@ -16,10 +16,6 @@ m.message_attributes = {
         "string_value": "12"
     }
 }
-
-
-
-
 print "these are all queues: " 
 print conn.get_all_queues()
 print "writing to queue"
