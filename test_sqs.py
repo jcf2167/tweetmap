@@ -5,6 +5,20 @@ q = conn.create_queue('myqueue')
 
 m = Message()
 m.set_body("hi")
+m = Message()
+m.message_attributes = {
+	"name1": {
+		"data_type": "String",
+		"string_value": "I am a string"
+	},
+	"name2": {
+		"data_type": "Number",
+		"string_value": "12"
+	}
+}
+
+
+
 m1 = Message()
 m.set_body("hi")
 m1.set_body("hi1")
@@ -15,6 +29,8 @@ q.write(m)
 q.write(m1)
 print "getting queue messgae"
 rs = q.get_messages(2)
+rs_attr = q.get_messages(message_attributes=['name1', 'name2'])
+ma= rs[0].message_attributes['name1']['data_type']
 print len(rs)
 print "these are all messages:"
 print q.get_messages(2)
