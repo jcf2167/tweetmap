@@ -53,18 +53,6 @@ def get_db():
 def connect_sqs():
     conn = boto.sqs.connect_to_region("us-west-2",aws_access_key_id=content[4].rstrip(),aws_secret_access_key=content[5].rstrip())
     q = conn.create_queue('myqueue')
-    print q
-    m = Message()
-    m.set_body('This is my first message.')
-    print "these are all queues: "
-    print conn.get_all_queues()
-    q.write(m)
-    rs = q.get_messages()
-    m = rs[0]
-    print m.get_body()
-    q.delete_message(m)
-    print q
-
 
 class StdOutListener(tweepy.StreamListener,):
 
@@ -96,6 +84,7 @@ class StdOutListener(tweepy.StreamListener,):
                     "VALUES (%s, %s, %s, %s, %s)")
 
                 print q
+                print conn.get_all_queues()
                 m = Message()
                 m.message_attributes = {
                     "user":user,
@@ -114,7 +103,7 @@ class StdOutListener(tweepy.StreamListener,):
                 print m.get_body()
                 q.delete_message(m)
                 print q
-                
+
                 data_one = (user,lat,lng,text,tweet_id)
                 cursor.execute(test, data_one)
                 cnx.commit()
