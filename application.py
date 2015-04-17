@@ -6,6 +6,8 @@ import threading
 import time 
 import mysql.connector
 import threading 
+from alchemyapi import AlchemyAPI
+
 
 import boto.sqs
 from boto.sqs.message import Message
@@ -16,9 +18,7 @@ print "working"
 
 DATABASE = 'coord.db'
 app = Flask(__name__)
-conn = sqlite3.connect("coord.db")
-cursor = conn.cursor()
-SQLITE_THREADSAFE = 2
+alchemyapi = AlchemyAPI()
 
 
 fake_db=[]
@@ -68,6 +68,8 @@ class StdOutListener(tweepy.StreamListener,):
             #print '@%s: %s' % (decoded['user']['screen_name'], decoded['text'].encode('ascii', 'ignore'))
             user = decoded['user']['screen_name']
             text = decoded['text'].encode('ascii', 'ignore')
+            print "________"
+            print text
             if decoded["geo"] == None:
                 pass
             else:
@@ -82,24 +84,24 @@ class StdOutListener(tweepy.StreamListener,):
                 test = ("INSERT INTO tweet "
                     "(keyword, lat, lng, tweet, tweet_id) "
                     "VALUES (%s, %s, %s, %s, %s)")
-
-                print conn.get_all_queues()
-                m = Message()
+              
+                '''
                 m.message_attributes = {
                     "user":user,
                     "geolocation":geolocation,
                     "location":location,
                     "lat":lat,
                     "lng":lng,
-                    #"tweet":tweet,
+                    "tweet":text,
                     "tweet_id":tweet_id,
                     "datetime": time.strftime("%b %d %Y %H:%M:%S", time.gmtime())
-                }
-
+                }'''
+                
                 queue_sns.write(m)
                 rs = queue_sns.get_messages()
                 m = rs[0]
                 print m.get_body()
+
 
                 data_one = (user,lat,lng,text,tweet_id)
                 cursor.execute(test, data_one)
@@ -133,7 +135,6 @@ def hello_world():
 
 @app.route('/compute', methods = ['POST'])
 def signup():
-    print " _________________________________________COMPUTE____"
     keyword = request.form['keyword']
     print("Finding keyword " + keyword + " ")
 
@@ -148,7 +149,6 @@ def showmap(keyword):
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     query = "SELECT lat, lng, tweet FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
-
     print "cursor is excuting: "
     cursor.execute(query)
     print "done:"
@@ -156,6 +156,27 @@ def showmap(keyword):
     db = []
     for (lat, lng, tweet) in cursor:
         db.append([tweet,lat, lng])
+        m=Message()
+        body = str(lat)+"|"+str(lng)+"|"+str(tweet)+"|"+str(time.strftime("%b %d %Y %H:%M:%S", time.gmtime()))
+        m.set_body(body) 
+        queue_sns.write(m)
+
+    msg = queue_sns.get_messages()
+    if len(msg)>0:
+        body = msg[0].get_body()
+        body = body.split("|")
+        lat = body[0]
+        lng = body[1]
+        tweet = body[2]
+        time = body[3]
+        response = alchemyapi.sentiment("text", tweet)
+
+
+    m = rs[0]
+    print m.get_body()
+                
+
+
     print len(db)
     cursor.close()
     cnx.close()
@@ -169,7 +190,7 @@ def hi(keyword):
     return render_template('index.html', author=author, name=name)
 
 def start_stream():
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret) 
     auth.set_access_token(access_token, access_token_secret)
     print "dubug -1"
     l = StdOutListener()
@@ -179,9 +200,8 @@ def start_stream():
     #stream.filter(track="a")
     stream.filter(locations=[-179.9,-89.9,179.9,89.9])
 
-
 def runThread():
-    st = threading.Thread( target = start_stream )
+    st = threading.Thread( target = start_stream ) #start thread at very beginning 
     st.start()
 
 if __name__ == '__main__':
