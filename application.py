@@ -30,7 +30,7 @@ consumer_secret = content[1].rstrip()
 access_token = content[2].rstrip()
 access_token_secret = content[3].rstrip()
 
-conn = boto.sqs.connect_to_region("us-west-2",aws_access_key_id=content[4].rstrip(),aws_secret_access_key=content[5].rstrip())
+conn = boto.sqs.connect_to_region("us-west-2")
 queue_sns = conn.create_queue('cloudcomp')
 
 config = {
@@ -149,7 +149,7 @@ def showmap(keyword):
     cursor = cnx.cursor()
     query = "SELECT lat, lng, tweet FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
 
-    print "cursor is excuging"
+    print "cursor is excuting: "
     cursor.execute(query)
     print "done:"
 
@@ -159,15 +159,6 @@ def showmap(keyword):
     print len(db)
     cursor.close()
     cnx.close()
-    '''
-    pass_db = []
-    for x in fake_db:
-        cursor.execute('insert into loc (user, lat, long) values (?, ?, ?);', [x[0], x[1], x[2]])
-        if x[0]==keyword:
-            pass_db.append[x]
-        fake_db.remove(x)
-    '''
-    print "fake db"
 
     return render_template('map.html',keyword=keyword, db=db)
 
