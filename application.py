@@ -131,18 +131,27 @@ def subscribe():
         #print request.body
         print obj
         print obj[u'Timestamp']
-        if 'Message' in obj:
+        if 'Subject' in obj:
             print "message is in obj"
             msg = obj[u'Message']
-            body = body_str.split("|")
+            print msg
+            body = obj[u'Subject']
+            body = body.split("|")
+            print "this is the body array"
+            print body
             lat = body[0]
+            print lat
             #print "lat " + lat
             lng = body[1]
-            #print "lng " + lng
-            tweet = body[2]
+            print lng
             #print "tweet " + tweet
-            time = body[3]
-            sentiment = body[4]
+            time = body[2]
+            print time
+            sentiment = body[3]
+            print sentiment
+            datapoint = [msg, lat,lng, time, sentiment]
+            sentimentdb.append(datapoint)
+
 
     return '', 200
 
@@ -170,7 +179,7 @@ def trythis():
 def signup():
     keyword = request.form['keyword']
     print("Finding keyword " + keyword + " ")
-
+    sentimentdb[:]=[]
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     query = "SELECT lat, lng, tweet FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
@@ -244,15 +253,20 @@ def startworker1():
             added_sentiment = body_str +"|"+ response
             #print "new Body: " + added_sentiment
             m.set_body(added_sentiment)
-            queue_sns_sentiment.write(m)
+            #queue_sns_sentiment.write(m)
 
             msg = queue_sns.get_messages()
             json_data = json.dumps(msgjson)
             topicarn="arn:aws:sns:us-west-2:708326387433:cloudcomp"
-            publication = c.publish(topicarn, message="point",  subject=added_sentiment)
-
-
-
+            print "about to publish"
+            print str(added_sentiment)
+            tempstr = lat+"|"+lng+"|"+time+"|"+response
+            print "Type tempstr"
+            print tempstr
+            added_sentiment = added_sentiment.encode("utf8")
+            print type(added_sentiment)
+            tempstr=tempstr.encode("utf8")
+            publication = c.publish(topicarn, message=tweet,  subject=tempstr)
 
 
 def runThread():
