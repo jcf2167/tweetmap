@@ -6,8 +6,10 @@ import threading
 import time 
 import mysql.connector
 import threading 
+from threading import Thread
 import boto.sns
 from requests import get as rget
+import urllib2
 
 from alchemyapi import AlchemyAPI
 import boto.sqs
@@ -21,6 +23,7 @@ DATABASE = 'coord.db'
 app = Flask(__name__)
 alchemyapi = AlchemyAPI()
 
+sentimentdb = []
 fake_db=[]
 
 with open("config") as f:
@@ -36,6 +39,7 @@ queue_sns_sentiment = conn.create_queue('sentimentcloud')
 c = boto.sns.connect_to_region("us-west-2")
 topicname = "cloudcomp"
 topicarn = c.create_topic(topicname)
+my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
 
 
 config = {
@@ -48,16 +52,6 @@ config = {
 
 #------------DATABASE STUFF----------------
 
-def connect_db():
-    """Connects to the specific database."""
-    rv = sqlite3.connect(DATABASE)
-    rv.row_factory = sqlite3.Row
-    return rv
-
-def get_db():
-    if not hasattr(g, 'sqlite_db'):
-        g.sqlite_db = connect_db()
-    return g.sqlite_db
 
 class StdOutListener(tweepy.StreamListener,):
 
@@ -115,19 +109,52 @@ def stream_tweet(keyword):
 def subscribe():
     print "_____________________SUBSCRIPTION___________________"
     headers = request.headers
-    print headers
+    print headers        
+    print "_____________________"
+    obj = json.loads(request.data)
+    #print obj
+
+    
     header_type = headers.get('X-Amz-Sns-Message-Type')
     if header_type == "SubscriptionConfirmation":
         print "yes!"
-    obj = json.loads(request.data)
-
+        obj = json.loads(request.data)
+        subscribe_url = obj[u'SubscribeURL']
+        print "subscribe_url!!"
+        print subscribe_url
+        print "_____________________ end SUBSCRIPTION___________________"
+        r = rget(subscribe_url)
+        
+        print "subscription confirmd"
+    elif header_type == "Notification":
+        print "NOTIVARTION"
+        #print request.body
+        print obj
+        print obj[u'Timestamp']
+        if 'Message' in obj:
+            print "message is in obj"
+            msg = obj[u'Message']
+            body = body_str.split("|")
+            lat = body[0]
+            #print "lat " + lat
+            lng = body[1]
+            #print "lng " + lng
+            tweet = body[2]
+            #print "tweet " + tweet
+            time = body[3]
+            sentiment = body[4]
 
     return '', 200
 
+
 @app.route('/')
 def hello_world(): 
-    '''
-    ip="http://160.39.138.189/subscribe"
+    author = "Me"
+    name = "You"
+    return render_template('index.html', author=author, name=name)
+
+def trythis():
+    ip="http://"+my_ip+":5005/subscribe"
     subscription = c.subscribe("arn:aws:sns:us-west-2:708326387433:cloudcomp", "http", ip)
     print "subscription: "
     print subscription
@@ -138,19 +165,12 @@ def hello_world():
         print "we're good"
     else:
         print r.status_code
-    '''
-    author = "Me"
-    name = "You"
-    return render_template('index.html', author=author, name=name)
 
 @app.route('/compute', methods = ['POST'])
 def signup():
     keyword = request.form['keyword']
     print("Finding keyword " + keyword + " ")
-    return redirect('/showmap/'+keyword)
 
-@app.route('/showmap/<keyword>')
-def showmap(keyword):
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     query = "SELECT lat, lng, tweet FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
@@ -167,36 +187,16 @@ def showmap(keyword):
         body = str(lat)+"|"+str(lng)+"|"+str(tweet)+"|"+str(time.strftime("%b %d %Y %H:%M:%S", time.gmtime()))
         m.set_body(body) 
         queue_sns.write(m)
-
-        '''
-    #now we process tweets? 
-    msg = queue_sns.get_messages()
-    if len(msg)>0:
-        body = msg[0].get_body()
-        body = body.split("|")
-        lat = body[0]
-        lng = body[1]
-        tweet = body[2]
-        time = body[3]
-        response = alchemyapi.sentiment("text", tweet)
-
-
-    m = rs[0]
-    print m.get_body()
-                
-    '''
-
-    print len(db)
     cursor.close()
     cnx.close()
+    return redirect('/showmap/'+keyword)
 
-    return render_template('map.html',keyword=keyword, db=db)
+@app.route('/showmap/<keyword>')
+def showmap(keyword):
+    print len(sentimentdb)
+    return render_template('map.html',keyword=keyword, db=sentimentdb)
 
-@app.route('/')
-def hi(keyword):
-    author = "Me"
-    name = "You"
-    return render_template('index.html', author=author, name=name)
+
 
 def start_stream():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret) 
@@ -213,6 +213,7 @@ def startworker1():
     #running forever 
     while True:
         msg = queue_sns.get_messages()
+        msgjson={}
         #print len(msg)
         #print type(msg)
         while(len(msg)>0):
@@ -221,12 +222,16 @@ def startworker1():
             #print body_str
             body = body_str.split("|")
             lat = body[0]
+            msgjson["lat"]=lat
             #print "lat " + lat
             lng = body[1]
+            msgjson["lng"] = lng
             #print "lng " + lng
             tweet = body[2]
+            msgjson["tweet"] =tweet
             #print "tweet " + tweet
             time = body[3]
+            msgjson["time"]=time
             #print "time " + time
             response = alchemyapi.sentiment("text", tweet)
             m = Message()
@@ -235,11 +240,19 @@ def startworker1():
             else:
                 response = response["docSentiment"]["type"]
 
+            msgjson["sentiment"]=response
             added_sentiment = body_str +"|"+ response
             #print "new Body: " + added_sentiment
             m.set_body(added_sentiment)
             queue_sns_sentiment.write(m)
+
             msg = queue_sns.get_messages()
+            json_data = json.dumps(msgjson)
+            topicarn="arn:aws:sns:us-west-2:708326387433:cloudcomp"
+            publication = c.publish(topicarn, message="point",  subject=added_sentiment)
+
+
+
 
 
 def runThread():
@@ -248,11 +261,13 @@ def runThread():
     st.start()
     worker1.start()
 
+
 if __name__ == '__main__':
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     print cnx
     #app.run(host='0.0.0.0')
+
 
     app.before_first_request(runThread)
     print threading._active
