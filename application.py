@@ -202,7 +202,12 @@ def signup():
 
 @app.route('/showmap/<keyword>')
 def showmap(keyword):
+    print "====================================================="
+    print "============about to push into html========================================="
     print len(sentimentdb)
+    print "====================================================="
+
+   
     return render_template('map.html',keyword=keyword, db=sentimentdb)
 
 

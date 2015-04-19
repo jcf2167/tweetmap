@@ -6,21 +6,32 @@
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
   <title>Tweet Heat</title>
   <style>
-  html { height: 100% }
+  html { height: 50% }
   body { height: 100%; margin: 0; padding: 0 }
   #map-canvas { height: 100% }
   h1 { position:absolute; }
+  #panel {
+        position: absolute;
+        top: 5px;
+        left: 50%;
+        margin-left: -180px;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+      }
   </style>
   <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='heatmap.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='gmaps-heatmap.js') }}"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"></script>
 
 </head>
 <body>
-  <div align="center"> <h3> Heatmap with your keyword: {{keyword}}</h3></div>
 
   <div id="map-canvas" align="center"></div>
+
 
   <script>
         // map center
@@ -33,45 +44,54 @@
         // standard map
         map = new google.maps.Map(document.getElementById("map-canvas"), myOptions);
         // heatmap layer
-        heatmap = new HeatmapOverlay(map, 
-        {
-            // radius should be small ONLY if scaleRadius is true (or small radius is intended)
-            "radius": 2,
-            "maxOpacity": 1, 
-            // scales the radius based on map zoom
-            "scaleRadius": true, 
-            // if set to false the heatmap uses the global maximum for colorization
-            // if activated: uses the data maximum within the current map boundaries 
-            //   (there will always be a red spot with useLocalExtremas true)
-            "useLocalExtrema": true,
-            // which field name in your data represents the latitude - default "lat"
-            latField: 'lat',
-            // which field name in your data represents the longitude - default "lng"
-            lngField: 'lng',
-            // which field name in your data represents the data value - default "value"
-            valueField: 'count'
-          }
-          );
+        var liveTweets = new google.maps.MVCArray();
 
-  
+       heatmap = new google.maps.visualization.HeatmapLayer({
+          data: liveTweets,
+          radius: 25
+        });
 
-        setTimeout('window.location.href=window.location.href;', 3000);
+      var liveTweets_neg = new google.maps.MVCArray();
+
+       heatmap_neg = new google.maps.visualization.HeatmapLayer({
+          data: liveTweets_neg,
+          radius: 25
+        });
+
+       heatmap_neg.setMap(map);
+
+
+        setTimeout('window.location.href=window.location.href;', 8000);
         //set interval
         //on change 
-        var testData = {
-
-          max: 500,
-          data: []
-          
-        };
-        heatmap.setData(testData);
+    
           {% for entry in db %}
+                  
+                  var tweetLocation = new google.maps.LatLng({{entry[1]}}, {{entry[2]}});
 
-          heatmap.addData( 
-            {lat:{{entry[1]}},lng:{{entry[2]}},count:1}
-              );
+                  {% if entry[3]=="positive"%}
+
+
+                  {%else%}
+
+                  {%endif%}
+                  console.log(tweetLocation)
+                  liveTweets.push(tweetLocation);
+
           {% endfor %}
-        
         </script>
-      </body>
+
+     function toggleHeatmap() {
+            heatmap.setMap(heatmap.getMap() ? null : map);
+      }
+
+
+    <div id="panel">
+      <button onclick="toggleHeatmap()">Negative Sentiment</button>
+      <button onclick="changeGradient()">Change gradient</button>
+      <button onclick="changeRadius()">Change radius</button>
+      <button onclick="changeOpacity()">Change opacity</button>
+    </div>
+
+  </body>
       </html>
