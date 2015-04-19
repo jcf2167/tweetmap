@@ -6,9 +6,9 @@
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
   <title>Tweet Heat</title>
   <style>
-  html { height: 50% }
+  html { height: 80% }
   body { height: 100%; margin: 0; padding: 0 }
-  #map-canvas { height: 100% }
+  #map-canvas { height: 80% }
   h1 { position:absolute; }
   #panel {
         position: absolute;
@@ -25,7 +25,7 @@
 <script type="text/javascript" src="{{ url_for('static', filename='heatmap.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='gmaps-heatmap.js') }}"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"></script>
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"></script>
 
 </head>
 <body>
@@ -58,7 +58,7 @@
           radius: 25
         });
 
-       heatmap_neg.setMap(map);
+       heatmap.setMap(map);
 
 
         setTimeout('window.location.href=window.location.href;', 8000);
@@ -68,27 +68,39 @@
           {% for entry in db %}
                   
                   var tweetLocation = new google.maps.LatLng({{entry[1]}}, {{entry[2]}});
-
-                  {% if entry[3]=="positive"%}
-
-
+                  
+                 
+                  {% if entry[4] == "positive"%}
+                       liveTweets.push(tweetLocation);
+                        console.log("positive tweets")
+                  
                   {%else%}
-
+                        console.log("negative tweets")
+                        liveTweets_neg.push(tweetLocation)
                   {%endif%}
                   console.log(tweetLocation)
-                  liveTweets.push(tweetLocation);
 
           {% endfor %}
+
+          function toNegative() {
+            heatmap_neg.setMap(map);
+                        heatmap.setMap(null)
+
+            }
+          function toPositive(){
+                        heatmap.setMap(map);
+                        heatmap_neg.setMap(null)
+
+
+          }
         </script>
 
-     function toggleHeatmap() {
-            heatmap.setMap(heatmap.getMap() ? null : map);
-      }
+     
 
 
     <div id="panel">
-      <button onclick="toggleHeatmap()">Negative Sentiment</button>
-      <button onclick="changeGradient()">Change gradient</button>
+      <button onclick="toNegative()">Negative Sentiment</button>
+      <button onclick="toPositive()">Positive Sentiment</button>
       <button onclick="changeRadius()">Change radius</button>
       <button onclick="changeOpacity()">Change opacity</button>
     </div>
