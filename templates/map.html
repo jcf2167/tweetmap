@@ -6,7 +6,7 @@
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
   <title>Tweet Heat</title>
   <style>
-  html { height: 80% }
+  html { height: 100% }
   body { height: 100%; margin: 0; padding: 0 }
   #map-canvas { height: 80% }
   h1 { position:absolute; }
@@ -21,11 +21,14 @@
         border: 1px solid #999;
       }
   </style>
-  <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='heatmap.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='gmaps-heatmap.js') }}"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=visualization"></script>
+   <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
+  
 
 </head>
 <body>
@@ -57,30 +60,33 @@
           data: liveTweets_neg,
           radius: 25
         });
-
+       var count = 0
        heatmap.setMap(map);
+        $(document).ready(function(){
+            namespace = '/test'; // change to an empty string to use the global namespace
+            // the socket.io documentation recommends sending an explicit package upon connection
+            // this is specially important when using the global namespace
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+     
+            // event handler for server sent data
+            // the data is displayed in the "Received" section of the page
+            socket.on('my response', function(msg) {
+                count += 1
+                console.log(count)
+                var lat = msg.lat
+                var lng = msg.lng
+                var tweetLocation = new google.maps.LatLng(lat,lng);
+                if (msg.sentiment == "positive"){
+                    liveTweets.push(tweetLocation)
+                }
+               else{
+                    liveTweets_neg.push(tweetLocation)
+               }
+                
 
-
-        setTimeout('window.location.href=window.location.href;', 8000);
-        //set interval
-        //on change 
-    
-          {% for entry in db %}
-                  
-                  var tweetLocation = new google.maps.LatLng({{entry[1]}}, {{entry[2]}});
-                  
-                 
-                  {% if entry[4] == "positive"%}
-                       liveTweets.push(tweetLocation);
-                        console.log("positive tweets")
-                  
-                  {%else%}
-                        console.log("negative tweets")
-                        liveTweets_neg.push(tweetLocation)
-                  {%endif%}
-                  console.log(tweetLocation)
-
-          {% endfor %}
+            });
+            
+        });
 
           function toNegative() {
             heatmap_neg.setMap(map);
@@ -90,8 +96,6 @@
           function toPositive(){
                         heatmap.setMap(map);
                         heatmap_neg.setMap(null)
-
-
           }
         </script>
 
@@ -101,9 +105,9 @@
     <div id="panel">
       <button onclick="toNegative()">Negative Sentiment</button>
       <button onclick="toPositive()">Positive Sentiment</button>
-      <button onclick="changeRadius()">Change radius</button>
-      <button onclick="changeOpacity()">Change opacity</button>
+      
     </div>
+    
 
   </body>
       </html>
