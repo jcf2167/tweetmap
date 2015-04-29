@@ -1,2 +1,6 @@
 This application lets you put in a keyword in the box. Before the application starts, two threads are created--one to gather tweets and put them into AWS RDS and another to act as the workerpool. A AWS SQS is initialized and whenever a user specifies a keyword, flask takes the keyword and goes through the database looking for tweets that have the keyword. Everytime it finds a matching entry, it puts it into the SQS. In thread-2, the workerpool is continously getting tweets off of the SQS and analyzing their sentiment with alchemy API, when it finishes analyzing their sentiment, it sends a SNS notification to the HTTP endpoint which is taken care of in the /subscribe function. Only two types of messages come into the subscribe function, either a confirmation or a notification. A confirmation message only comes when my IP address changes, then the function subscribes the computer's IP to the topic. When the function recieves a notification, it sends the datapoint into the map. 
 
+TODO:
+program automatic aws sns subscription
+push streaming data via websockets not ghetto refreshing
+
