@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+     <link href="{{ url_for('static', filename='nv.d3.css') }}" rel="stylesheet" type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.2/d3.min.js" charset="utf-8"></script>
+    <script src="{{ url_for('static', filename='nv.d3.js') }}"></script>
+    <script src="{{ url_for('static', filename='stream_layers.js') }}"></script>
+
+    <style>
+        text {
+            font: 12px sans-serif;
+        }
+        svg {
+            display: block;
+        
+            
+        }
+        html, body {
+            margin: 0px;
+            padding: 0px;
+            height: 100%;
+            width: 100%;
+        }
+         #chart1{
+            margin: 0px;
+            padding: 0px;
+            width:100%;
+            height: 100%;
+        }
+
+    </style>
+</head>
+<body class='with-3d-shadow with-transitions'>
+<h1 align="center"> Analytics for keyword: {{keyword}} </h1>
+<br>
+<div align="center">
+<svg id="test1" class="mypiechart" style="height: 350px; width: 350px; float:left;" ></svg>
+<svg id="test2" class="mypiechart" style="height: 350px; width: 350px;float:left;" float="left"></svg>
+<h3>Total Positive for {{keyword}}: {{posCount}}</h3>
+<h3>Total Negative for {{keyword}}: {{negCount}}</h3>
+<h3> Total for {{keyword}}: {{numkey}} </h3>
+<h3>Total tracked: {{total}} </h3>
+</div>
+
+<br><br><br><br><br><br><br><br><br><br><br>
+<div id="chart1">
+    <h2 align="center">Longitude vs. #tweets about {{keyword}}</h2>
+    <h5 align="center">SOUTH &emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      Prime meridian: 0 &emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;NORTH </h5>
+    <svg style="height: 400px; width: 1000px;"></svg>
+    
+   
+
+<br><br><br>
+<div id="chart2">
+    <h2 align="center">Latitude vs. #tweets about {{keyword}}</h2>
+      <h5 align="center">EAST &emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      Equator: 0 &emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;
+      &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;WEST </h5>
+    <svg style="height: 400px; width: 1000px;"></svg>
+</div>
+
+
+<script>
+
+    var testdata = [
+        {key: "Positive", y: {{negCount}}},
+        {key: "Negative", y: {{posCount }}},
+    ];
+    
+     var testdata1 = [
+
+        {key: "{{keyword}}", y: {{ numkey }}},
+        {key: "Total Tweets", y: 100},
+    ];
+    var height = 350;
+    var width = 350;
+
+     var testdata2 = [
+        {key: "One", y: 5},
+        {key: "Two", y: 2},
+        {key: "Three", y: 9},
+        {key: "Four", y: 7},
+        {key: "Five", y: 4},
+        {key: "Six", y: 3},
+        {key: "Seven", y: 0.5}
+    ];
+
+    nv.addGraph(function() {
+        var chart = nv.models.pieChart()
+            .x(function(d) { return d.key })
+            .y(function(d) { return d.y })
+            .width(width)
+            .height(height)
+            .title("shit");
+        d3.select("#test1")
+            .datum(testdata)
+            .transition().duration(1200)
+            .attr('width', width)
+            .attr('height', height)
+            .call(chart);
+
+        return chart;
+    });
+   
+   //Donut chart example
+nv.addGraph(function() {
+  var chart = nv.models.pieChart()
+      .x(function(d) { return d.label })
+      .y(function(d) { return d.value })
+      .showLabels(true)     //Display pie labels
+      .labelThreshold(.05)  //Configure the minimum slice size for labels to show up
+      .labelType("percent") //Configure what type of data to show in the label. Can be "key", "value" or "percent"
+      .donut(true)          //Turn on Donut mode. Makes pie chart look tasty!
+      .donutRatio(0.35)     //Configure how big you want the donut hole size to be.
+      ;
+
+    d3.select("#test2")
+        .datum(exampleData())
+        .call(chart);
+
+  return chart;
+});
+
+//Pie chart example data. Note how there is only a single array of key-value pairs.
+function exampleData() {
+  return  [
+      { 
+        "label": "Total",
+        "value" : {{total}}
+      } , 
+      { 
+        "label": "{{keyword}}",
+        "value" : {{numkey}}
+      } 
+      
+    ];
+}
+
+
+historicalBarChart = [
+        {
+            key: "Cumulative Return",
+            values: [
+                {
+                    "label" : "-90 to -60" ,
+                    "value" : {{lngbin[0]}}
+                } ,
+                {
+                    "label" : "-60 to -30" ,
+                    "value" : {{lngbin[1]}}
+                } ,
+                {
+                    "label" : "-30 to 0" ,
+                    "value" : {{lngbin[2]}}
+                } ,
+                {
+                    "label" : "0 to 30" ,
+                    "value" : {{lngbin[3]}}
+                } ,
+                {
+                    "label" : "30 to 60" ,
+                    "value" : {{lngbin[4]}}
+                } ,
+                {
+                    "label" : "60 to 90" ,
+                    "value" : {{lngbin[5]}}
+                } 
+                
+            ]
+        }
+    ];
+
+    nv.addGraph(function() {
+        var chart = nv.models.discreteBarChart()
+            .x(function(d) { return d.label })
+            .y(function(d) { return d.value })
+            .staggerLabels(true)
+            //.staggerLabels(historicalBarChart[0].values.length > 8)
+            .tooltips(false)
+            .showValues(true)
+            .duration(250)
+            ;
+
+        d3.select('#chart1 svg')
+            .datum(historicalBarChart1)
+            .call(chart);
+
+        nv.utils.windowResize(chart.update);
+        return chart;
+    });
+
+    historicalBarChart1 = [
+        {
+            key: "Cumulative Return",
+            values: [
+                {
+                    "label" : "-180 to -120" ,
+                    "value" : {{latbin[0]}}
+                } ,
+                {
+                    "label" : "-120 to -60" ,
+                    "value" : {{latbin[1]}}
+                } ,
+                {
+                    "label" : "-60 to 0" ,
+                    "value" : {{latbin[2]}}
+                } ,
+                {
+                    "label" : "0 to 60" ,
+                    "value" : {{latbin[3]}}
+                } ,
+                {
+                    "label" : "60 to 120" ,
+                    "value" : {{latbin[4]}}
+                } ,
+                {
+                    "label" : "120 to 180" ,
+                    "value" : {{latbin[5]}}
+                } 
+                
+            ]
+        }
+    ];
+
+    nv.addGraph(function() {
+        var chart = nv.models.discreteBarChart()
+            .x(function(d) { return d.label })
+            .y(function(d) { return d.value })
+            .staggerLabels(true)
+            //.staggerLabels(historicalBarChart[0].values.length > 8)
+            .tooltips(false)
+            .showValues(true)
+            .duration(250)
+            ;
+
+        d3.select('#chart2 svg')
+            .datum(historicalBarChart)
+            .call(chart);
+
+        nv.utils.windowResize(chart.update);
+        return chart;
+    });
+
+</script>
+</body>
+</html>
