@@ -29,6 +29,8 @@ app.debug = True
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+db=[]
+
 alchemyapi = AlchemyAPI()
 
 sentimentdb = []
@@ -46,8 +48,6 @@ queue_sns_sentiment = conn.create_queue('sentimentcloud')
 c = boto.sns.connect_to_region("us-west-2")
 topicname = "cloudcomp"
 topicarn = c.create_topic(topicname)
-my_ip = urllib2.urlopen('http://ip.42.pl/raw').read()
-
 
 config = {
   'user': 'jessicafan',
@@ -66,7 +66,6 @@ class StdOutListener(tweepy.StreamListener,):
         self.max=100000
 
     def on_data(self, data):
-        # Twitter returns data in JSON format - we need to decode it first
         decoded = json.loads(data)
         #print decoded
         if 'user' in decoded:
@@ -74,8 +73,6 @@ class StdOutListener(tweepy.StreamListener,):
             #print '@%s: %s' % (decoded['user']['screen_name'], decoded['text'].encode('ascii', 'ignore'))
             user = decoded['user']['screen_name']
             text = decoded['text'].encode('ascii', 'ignore')
-           # print "________"
-            #print text
             if decoded["geo"] == None:
                 pass
             else:
@@ -86,7 +83,6 @@ class StdOutListener(tweepy.StreamListener,):
                 lng = geolocation[1]
                 cnx = mysql.connector.connect(**config)
                 cursor = cnx.cursor()
-               # print location
                 test = ("INSERT INTO tweet "
                     "(keyword, lat, lng, tweet, tweet_id) "
                     "VALUES (%s, %s, %s, %s, %s)")
@@ -95,75 +91,45 @@ class StdOutListener(tweepy.StreamListener,):
                 cursor.execute(test, data_one)
                 cnx.commit()
                 cursor.close()
-              
         return True
+
     def on_error(self, status):
         print status
 
-def stream_tweet(keyword):
-    print "debug0"
-    #exam = cursor.execute("select * from loc;")
-    #entires = exam.fetchall()
-    print "debug1   "
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    print "start streaming"
-    l = StdOutListener()
-    stream = tweepy.Stream(auth, l)
-    stream.filter()
+@app.route('/more')
+def more():
+    keyword = request.args.get('keyword')
+    posCount =  request.args.get('posCount')
+    negCount = request.args.get('negCount')
+    return render_template('analyze.html', keyword=keyword, 
+                                           posCount=posCount, 
+                                           negCount=negCount)
+
 
 @app.route('/subscribe', methods=['POST','GET'])
 def subscribe():
-    #print "_____________________SUBSCRIPTION___________________"
     headers = request.headers
-    #print headers        
-    #print "_____________________"
-    obj = json.loads(request.data)
-    #print obj
-
-    
+    obj = json.loads(request.data)  
     header_type = headers.get('X-Amz-Sns-Message-Type')
     if header_type == "SubscriptionConfirmation":
-        print "yes!"
         obj = json.loads(request.data)
         subscribe_url = obj[u'SubscribeURL']
-        #print "subscribe_url!!"
-        #print subscribe_url
-        #print "_____________________ end SUBSCRIPTION___________________"
         r = rget(subscribe_url)
-        
-        print "subscription confirmd"
+        print "subscription confirmed"
     elif header_type == "Notification":
-        #print "NOTIVARTION"
-        #print request.body
-        #print obj
-        #print obj[u'Timestamp']
         if 'Subject' in obj:
-            #print "message is in obj"
             msg = obj[u'Message']
-            #print msg
             body = obj[u'Subject']
             body = body.split("|")
-            #print "this is the body array"
-            #print body
             lat = body[0]
-           # print lat
-            #print "lat " + lat
             lng = body[1]
-            #print lng
-            #print "tweet " + tweet
             time = body[2]
-            #print time
             sentiment = body[3]
-            #print sentiment
-            datapoint = [msg, lat,lng, time, sentiment]
-            sentimentdb.append(datapoint)
             socketio.emit('my response',
                       {'data': 'Server generated event',
                         'lat':lat,
                         'lng': lng,
                         'sentiment': sentiment
-
                       },
                       namespace='/test')
     return '', 200
@@ -186,10 +152,8 @@ def signup():
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     query = "SELECT lat, lng, tweet FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
-    #print "cursor is excuting: "
     cursor.execute(query)
-    #print "done:"
-   # queue_sns.purge()
+    #queue_sns.purge()
     
     db = []
     for (lat, lng, tweet) in cursor:
@@ -198,12 +162,7 @@ def signup():
         body = str(lat)+"|"+str(lng)+"|"+str(tweet)+"|"+str(time.strftime("%b %d %Y %H:%M:%S", time.gmtime()))
         m.set_body(body) 
         queue_sns.write(m)
-
-    print "====================================================="
-    print "============about to push into html========================================="
-    print len(db)
-    print "====================================================="
-   
+    print "============push into html========================================="
     cursor.close()
     cnx.close()
     return redirect('/showmap/'+keyword)
@@ -231,48 +190,36 @@ def startworker1():
             queue_sns.delete_message(msg[0])
             body = body_str.split("|")
             lat = body[0]
-            msgjson["lat"]=lat
-            #print "lat " + lat
+            msgjson["lat"]=lat  
             lng = body[1]
-            msgjson["lng"] = lng
-            #print "lng " + lng
+            msgjson["lng"] = lng    
             tweet = body[2]
-            msgjson["tweet"] =tweet
-            #print "tweet " + tweet
+            msgjson["tweet"] =tweet     
             time = body[3]
-            msgjson["time"]=time
-            #print "time " + time
+            msgjson["time"]=time   
             response = alchemyapi.sentiment("text", tweet)
-            print response
             m = Message()
             if 'docSentiment' not in response:
                 print "docSentiment not in reponse"
                 response = "neutral"
             else:
                 response = response["docSentiment"]["type"]
-
             msgjson["sentiment"]=response
             added_sentiment = body_str +"|"+ response
-            #print "new Body: " + added_sentiment
             m.set_body(added_sentiment)
-            #queue_sns_sentiment.write(m)
-
             msg = queue_sns.get_messages()
             json_data = json.dumps(msgjson)
             topicarn="arn:aws:sns:us-west-2:708326387433:cloudcomp"
-            #print "about to publish"
-            print str(added_sentiment)
             tempstr = lat+"|"+lng+"|"+time+"|"+response
             added_sentiment = added_sentiment.encode("utf8")
-            #print type(added_sentiment)
             tempstr=tempstr.encode("utf8")
             publication = c.publish(topicarn, message=tweet,  subject=tempstr)
 
 
 def runThread():
-    st = threading.Thread( target = start_stream ) #start thread at very beginning 
+    #st = threading.Thread( target = start_stream ) #start thread at very beginning 
     worker1 = threading.Thread(target= startworker1)
-    st.start()
+    #st.start()
     worker1.start()
 
 
