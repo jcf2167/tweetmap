@@ -127,39 +127,36 @@ def more():
     db = []
     for (lat, lng) in cursor:
         ablat= abs(lat)
-        if (-90<lng<-60):
-            lngbin[0] +=1
-        elif (-60<lng<-30):
-            lngbin[1] +=1
-        elif (-30<lng<0):
-            lngbin[2] +=1
-        elif (0<lng<30):
-            lngbin[3] +=1
-        elif (30<lng<60):
-            lngbin[4] +=1
-        else: #60 - 90
-            print "lng: "
-            print lng
-            if -90 < lng & lng < -60:
-                print "**********************"
-            print type(lng)
-            lngbin[5] +=1
-
-        if(-180<lat<-120):
+        print "lat:"
+        print lat
+        if (-90<lat<-60):
             latbin[0] +=1
-        elif(-120<lat<-60):
+        elif (-60<lat<-30):
             latbin[1] +=1
-        elif(-60<lat<0):
+        elif (-30<lat<0):
             latbin[2] +=1
-        elif(0<lat<60):
+        elif (0<lat<30):
             latbin[3] +=1
-        elif(60<lat<120):
+        elif (30<lat<60):
             latbin[4] +=1
-        else:
-            print "lat:"
-            print type(lat)
-            print lat
+        else: #60 - 90
             latbin[5] +=1
+       
+        print "**********************"
+        print "lng:"
+        print lng
+        if(-180<lng<-120):
+            lngbin[0] +=1
+        elif(-120<lat<-60):
+            lngbin[1] +=1
+        elif(-60<lat<0):
+            lngbin[2] +=1
+        elif(0<lat<60):
+            lngbin[3] +=1
+        elif(60<lat<120):
+            lngbin[4] +=1
+        else:
+            lngbin[5] +=1
 
     for i in lngbin:
         print i
