@@ -99,12 +99,91 @@ class StdOutListener(tweepy.StreamListener,):
 @app.route('/more')
 def more():
     keyword = request.args.get('keyword')
-    posCount =  request.args.get('posCount')
-    negCount = request.args.get('negCount')
+    posCount =  int(request.args.get('posCount'))
+
+    negCount = int(request.args.get('negCount'))
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    query = "select count(*) from tweet"
+    cursor.execute(query)
+    for i in cursor:
+        total=i
+    print "-------------"
+    print type(total[0])
+    total= int(total[0])
+
+    print 'posCount'
+    print type(posCount)
+    print 'negCount'
+    print type(negCount)
+    numkey = posCount + negCount
+
+    query = "SELECT lat, lng FROM tweet WHERE tweet LIKE \"%" + keyword +"%\""
+    cursor.execute(query)
+    #queue_sns.purge()
+    
+    latbin=[0,0,0,0,0,0]
+    lngbin=[0,0,0,0,0,0]
+    db = []
+    for (lat, lng) in cursor:
+        ablat= abs(lat)
+        if (-90<lng<-60):
+            lngbin[0] +=1
+        elif (-60<lng<-30):
+            lngbin[1] +=1
+        elif (-30<lng<0):
+            lngbin[2] +=1
+        elif (0<lng<30):
+            lngbin[3] +=1
+        elif (30<lng<60):
+            lngbin[4] +=1
+        else: #60 - 90
+            print "lng: "
+            print lng
+            if -90 < lng & lng < -60:
+                print "**********************"
+            print type(lng)
+            lngbin[5] +=1
+
+        if(-180<lat<-120):
+            latbin[0] +=1
+        elif(-120<lat<-60):
+            latbin[1] +=1
+        elif(-60<lat<0):
+            latbin[2] +=1
+        elif(0<lat<60):
+            latbin[3] +=1
+        elif(60<lat<120):
+            latbin[4] +=1
+        else:
+            print "lat:"
+            print type(lat)
+            print lat
+            latbin[5] +=1
+
+    for i in lngbin:
+        print i
+    print "-----break"
+    for j in latbin:
+        print j
+    print "============push into html========================================="
+    cursor.close()
+    cnx.close()
+
+    print "numkey: "
+    print numkey
+    print(type(posCount))
+    print(type(negCount))
+    print(type(total))
+    print(type(numkey))
     return render_template('analyze.html', keyword=keyword, 
                                            posCount=posCount, 
-                                           negCount=negCount)
-
+                                           negCount=negCount,
+                                           total= total,
+                                            numkey=numkey,
+                                            latbin=latbin,
+                                            lngbin=lngbin
+                                            )
 
 @app.route('/subscribe', methods=['POST','GET'])
 def subscribe():
